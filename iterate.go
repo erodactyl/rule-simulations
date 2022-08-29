@@ -6,24 +6,28 @@ import (
 )
 
 func iterate() {
-	for _, point := range points {
-		point.x = point.x + point.vx
-		point.y = point.y + point.vy
-		if point.x > Width || point.x < 0 {
-			point.vx = -point.vx
-		}
-		if point.y > Height || point.y < 0 {
-			point.vy = -point.vy
-		}
+	wg := sync.WaitGroup{}
+
+	// Update locations
+
+	wg.Add(len(points))
+
+	for _, p := range points {
+		go func(p *Point) {
+			move(p)
+			wg.Done()
+		}(p)
 	}
 
-	wg := sync.WaitGroup{}
+	wg.Wait()
+
+	// Update speeds
 
 	wg.Add(len(points))
 
 	for _, p1 := range points {
 		go func(p *Point) {
-			calculateForces(p)
+			accelerate(p)
 			wg.Done()
 		}(p1)
 	}
@@ -31,7 +35,18 @@ func iterate() {
 	wg.Wait()
 }
 
-func calculateForces(p1 *Point) {
+func move(point *Point) {
+	point.x = point.x + point.vx
+	point.y = point.y + point.vy
+	if point.x > Width || point.x < 0 {
+		point.vx = -point.vx
+	}
+	if point.y > Height || point.y < 0 {
+		point.vy = -point.vy
+	}
+}
+
+func accelerate(p1 *Point) {
 	fx, fy := 0.0, 0.0
 	for _, p2 := range points {
 		if p1 != p2 {
